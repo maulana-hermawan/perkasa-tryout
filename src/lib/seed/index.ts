@@ -18,8 +18,14 @@ export { SEED_ATTEMPTS } from "./attempts";
 export { SEED_PAYMENTS, SEED_VOUCHERS, SEED_SETTINGS } from "./commerce";
 export { SEED_ACTIVITY_LOGS } from "./logs";
 
-/** Bump `DB_VERSION` (in `src/lib/store/db.ts`) when this shape changes. */
-export const DB_VERSION = 1;
+/**
+ * Bump this when the seed content changes shape or gains data that a persisted
+ * copy would otherwise miss (new packages, new attempts, …). Older copies in
+ * localStorage are discarded by `migrate` and replaced with the fresh seed.
+ *
+ * v2 — UTBK + kedinasan packages, UTBK questions, seeded essay attempt.
+ */
+export const DB_VERSION = 2;
 
 /** Builds a fresh, deterministic clone of the demo database. */
 export function createSeedDatabase(): Database {
