@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
@@ -36,6 +37,7 @@ export default function AdminQuestionBankPage() {
   const [type, setType] = useState<QuestionType | "">("");
   const [difficulty, setDifficulty] = useState<Difficulty | "">("");
   const [subtestId, setSubtestId] = useState("");
+  const [includeGenerated, setIncludeGenerated] = useState(false);
   const [page, setPage] = useState(1);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [preview, setPreview] = useState<Question | null>(null);
@@ -43,9 +45,17 @@ export default function AdminQuestionBankPage() {
 
   const PAGE_SIZE = 12;
 
+  // Items generated on the fly for a Tes Kecermatan attempt are stored with an
+  // `attempt:<id>` tag; they belong to that attempt and would flood the bank.
+  const generatedCount = useMemo(
+    () => db.questions.filter((question) => question.tags.some((tag) => tag.startsWith("attempt:"))).length,
+    [db.questions],
+  );
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return db.questions.filter((question) => {
+      if (!includeGenerated && question.tags.some((tag) => tag.startsWith("attempt:"))) return false;
       if (type && question.type !== type) return false;
       if (difficulty && question.difficulty !== difficulty) return false;
       if (subtestId && question.subtestId !== subtestId) return false;
@@ -55,7 +65,7 @@ export default function AdminQuestionBankPage() {
       }
       return true;
     });
-  }, [db.questions, search, type, difficulty, subtestId, tx]);
+  }, [db.questions, includeGenerated, search, type, difficulty, subtestId, tx]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -152,6 +162,17 @@ export default function AdminQuestionBankPage() {
             .map((item) => ({ value: item.id, label: tx(item.name) }))}
         />
       </AdminToolbar>
+
+      {generatedCount > 0 && (
+        <label className="flex min-h-11 items-center justify-between gap-3 rounded-xl border border-border px-3">
+          <span className="text-sm">{t("admin.questions.includeGenerated", { count: generatedCount })}</span>
+          <Switch
+            checked={includeGenerated}
+            onCheckedChange={setIncludeGenerated}
+            aria-label={t("admin.questions.includeGenerated", { count: generatedCount })}
+          />
+        </label>
+      )}
 
       {visible.length === 0 ? (
         <AdminEmpty title={t("admin.questions.empty")} />

@@ -69,6 +69,27 @@ describe("seed database integrity", () => {
     }
   });
 
+  it("fills every non-generated subtest of a published package with questions", () => {
+    const generated = new Set(db.subtests.filter((item) => item.generator).map((item) => item.id));
+    for (const pkg of db.packages.filter((item) => item.status === "published")) {
+      for (const entry of pkg.subtests) {
+        if (generated.has(entry.subtestId)) continue;
+        expect(entry.questionIds.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("ships a UTBK package covering reasoning, quantitative and literacy", () => {
+    const pkg = db.packages.find((item) => item.id === "pkg-utbk-1");
+    expect(pkg).toBeDefined();
+    expect(pkg?.categoryId).toBe("cat-utbk");
+    expect(pkg?.subtests.map((entry) => entry.subtestId)).toEqual([
+      "st-utbk-pu",
+      "st-utbk-kuantitatif",
+      "st-utbk-literasi",
+    ]);
+  });
+
   it("ships demo accounts for every role", () => {
     const roles = new Set(db.users.map((user) => user.role));
     expect(roles).toEqual(new Set(["admin", "host", "participant"]));

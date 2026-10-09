@@ -597,7 +597,8 @@
       "deleteDescription": "Soal akan dihapus permanen dari bank soal.",
       "empty": "Tidak ada soal yang cocok dengan filter.",
       "count": "{{count}} soal",
-      "generated": "Generated"
+      "generated": "Generated",
+      "includeGenerated": "Sertakan soal otomatis ({{count}})"
     },
     "grading": {
       "title": "Penilaian Essay",

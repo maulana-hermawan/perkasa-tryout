@@ -597,7 +597,8 @@
       "deleteDescription": "The question will be permanently removed from the bank.",
       "empty": "No questions match these filters.",
       "count": "{{count}} questions",
-      "generated": "Generated"
+      "generated": "Generated",
+      "includeGenerated": "Include auto-generated items ({{count}})"
     },
     "grading": {
       "title": "Essay Grading",

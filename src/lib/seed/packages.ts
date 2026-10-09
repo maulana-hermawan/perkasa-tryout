@@ -8,6 +8,7 @@ import {
 } from "./questions/toefl";
 import { KEPRIBADIAN_QUESTION_IDS } from "./questions/psikotes";
 import { UMUM_ESAI_IDS, UMUM_LOGIKA_IDS, UMUM_PU_IDS } from "./questions/umum";
+import { UTBK_KUANTITATIF_IDS, UTBK_LITERASI_IDS, UTBK_PU_IDS } from "./questions/utbk";
 
 function sub(order: number, subtestId: string, questionIds: string[], selection?: PackageSubtest["selection"]): PackageSubtest {
   return { order, subtestId, questionIds, selection };
@@ -218,4 +219,41 @@ export const SEED_PACKAGES: TryoutPackage[] = [
     createdAt: daysAgo(3),
     updatedAt: daysAgo(3),
   },
+  {
+    id: "pkg-utbk-1",
+    slug: "tryout-utbk-penalaran-kuantitatif-literasi",
+    title: bi("Tryout UTBK – Penalaran, Kuantitatif & Literasi", "UTBK Tryout – Reasoning, Quantitative & Literacy"),
+    description: bi(
+      "Latihan UTBK dengan tiga subtes: Penalaran Umum, Kuantitatif (angka dan rumus), serta Literasi Bahasa berbasis bacaan. Cocok untuk mengukur kesiapan sebelum ujian resmi.",
+      "A UTBK practice set with three subtests: General Reasoning, Quantitative (numbers and formulas), and passage-based Language Literacy. Ideal for measuring readiness before the real exam.",
+    ),
+    categoryId: "cat-utbk",
+    testTypeId: "tt-utbk",
+    pricingModel: "freemium",
+    price: 59_000,
+    discountPrice: 45_000,
+    thumbnail: gradient("#f59e0b", "#f97316", "GraduationCap"),
+    subtests: [
+      sub(1, "st-utbk-pu", UTBK_PU_IDS),
+      sub(2, "st-utbk-kuantitatif", UTBK_KUANTITATIF_IDS),
+      sub(3, "st-utbk-literasi", UTBK_LITERASI_IDS),
+    ],
+    durationMinutes: 60,
+    totalQuestions: UTBK_PU_IDS.length + UTBK_KUANTITATIF_IDS.length + UTBK_LITERASI_IDS.length,
+    difficulty: "hard",
+    rating: 4.7,
+    ratingCount: 386,
+    participantCount: 4_120,
+    tags: ["utbk", "snmptn", "penalaran", "kuantitatif", "literasi"],
+    status: "published",
+    publishedAt: daysAgo(9),
+    showDiscussion: true,
+    allowBack: true,
+    shuffleQuestions: true,
+    shuffleOptions: true,
+    createdBy: "usr-admin",
+    createdAt: daysAgo(14),
+    updatedAt: daysAgo(9),
+  },
+
 ];

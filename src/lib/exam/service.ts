@@ -221,11 +221,6 @@ export async function startAttempt({ userId, packageId, sessionId }: StartAttemp
   return attempt;
 }
 
-/** Generated items clutter the bank once the attempt is graded — drop them. */
-export async function pruneGeneratedQuestions(attemptId: string): Promise<void> {
-  await dataSource.questions.removeByTag(`attempt:${attemptId}`);
-}
-
 /* --------------------------------- load ----------------------------------- */
 
 export async function loadExamContext(attemptId: string): Promise<ExamContext | null> {

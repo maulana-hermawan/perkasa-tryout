@@ -48,12 +48,12 @@ describe("packages", () => {
   it("lists only published packages by default", async () => {
     const all = await dataSource.packages.listByFilter({});
     expect(all.every((pkg) => pkg.status === "published")).toBe(true);
-    expect(all).toHaveLength(5);
+    expect(all).toHaveLength(6);
   });
 
   it("filters by pricing model", async () => {
     expect(await dataSource.packages.listByFilter({ pricingModel: "free" })).toHaveLength(2);
-    expect(await dataSource.packages.listByFilter({ pricingModel: "freemium" })).toHaveLength(2);
+    expect(await dataSource.packages.listByFilter({ pricingModel: "freemium" })).toHaveLength(3);
     expect(await dataSource.packages.listByFilter({ pricingModel: "paid" })).toHaveLength(1);
   });
 
