@@ -9,6 +9,17 @@ const QUESTION_MAP = new Map(ALL_QUESTIONS.map((question) => [question.id, quest
 
 type Outcome = "correct" | "wrong" | "empty" | number;
 
+/**
+ * A realistic short essay so the manual-grading queue (and the "awaiting
+ * manual grade" state on the result screen) has something to show.
+ */
+const ESSAY_SAMPLE = [
+  "Literasi digital penting agar pelajar mampu melakukan verifikasi setiap sumber",
+  "informasi sebelum membagikannya, sehingga terhindar dari hoaks yang merugikan.",
+  "Selain itu, pemahaman tentang privasi data dan etika bermedia membantu pelajar",
+  "menjaga jejak digitalnya tetap aman dan bertanggung jawab di ruang publik.",
+].join(" ");
+
 /** Build the raw answer payload for a question given the desired outcome. */
 function answerValue(question: Question, outcome: Outcome): AnswerValue | null {
   if (outcome === "empty") return null;
@@ -77,7 +88,7 @@ function answerValue(question: Question, outcome: Outcome): AnswerValue | null {
     case "kecermatan-kraepelin":
       return { kind: "digits", digits: question.correctAnswers.map((answer) => (outcome === "correct" ? answer : "")) };
     case "essay":
-      return { kind: "text", text: "" };
+      return { kind: "text", text: ESSAY_SAMPLE };
     default:
       return null;
   }
@@ -202,6 +213,19 @@ const umumAnswers = buildAnswers(
   umumStartedAt,
 );
 
+/* --------------------- 5. Short-essay attempt (grading) ------------------- */
+
+const ESAI_STARTED = new Date(new Date(hoursAgo(20)).getTime()).toISOString();
+const ESAI_SUBMITTED = hoursAgo(19);
+const ESAI_ORDER = { "st-umum-esai": UMUM_ORDER["st-umum-esai"] };
+const esaiAnswers = buildAnswers(
+  UMUM_ORDER["st-umum-esai"].map((questionId) => ({
+    questionId,
+    outcome: "correct" as Outcome,
+  })),
+  ESAI_STARTED,
+);
+
 /* --------------------------- compute the results -------------------------- */
 
 function compute(input: {
@@ -261,7 +285,42 @@ const kepResult = compute({
   secondsPerSubtest: { "st-kepribadian": 640 },
 });
 
+const esaiResult = compute({
+  attemptId: "att-umum-esai-1",
+  subtestIds: ["st-umum-esai"],
+  questionOrder: ESAI_ORDER,
+  answers: esaiAnswers,
+  startedAt: ESAI_STARTED,
+  submittedAt: ESAI_SUBMITTED,
+  totalParticipants: 1_150,
+  secondsPerSubtest: { "st-umum-esai": 1_180 },
+});
+
 export const SEED_ATTEMPTS: Attempt[] = [
+  {
+    id: "att-umum-esai-1",
+    userId: "usr-participant-2",
+    packageId: "pkg-umum-1",
+    status: "submitted",
+    startedAt: ESAI_STARTED,
+    submittedAt: ESAI_SUBMITTED,
+    answers: esaiAnswers,
+    questionOrder: ESAI_ORDER,
+    currentSubtestId: "st-umum-esai",
+    currentIndex: 2,
+    timeLeftSeconds: 0,
+    tabSwitchCount: 0,
+    subtestProgress: [
+      {
+        subtestId: "st-umum-esai",
+        startedAt: ESAI_STARTED,
+        endedAt: ESAI_SUBMITTED,
+        secondsUsed: 1_180,
+        order: 1,
+      },
+    ],
+    result: esaiResult,
+  },
   {
     id: "att-skd-1",
     userId: "usr-participant",

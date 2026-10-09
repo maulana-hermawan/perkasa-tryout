@@ -348,6 +348,10 @@ export interface AnswerRecord {
   marked: boolean;
   updatedAt: string;
   timeSpentSeconds: number;
+  /** Manual score for essay / short answers (overrides auto scoring). */
+  manualScore?: number;
+  gradedAt?: string;
+  graderNote?: string;
 }
 
 export function isAnswered(value: AnswerValue | null | undefined): boolean {

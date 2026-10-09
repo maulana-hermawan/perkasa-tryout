@@ -57,11 +57,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   >
                     <Icon className="size-4.5" />
                     <span className="truncate">{t(item.labelKey)}</span>
-                    {!item.ready && !active && (
-                      <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[0.625rem] font-medium text-muted-foreground">
-                        {t("common.comingSoon")}
-                      </span>
-                    )}
+                    {active && <span className="ml-auto size-1.5 rounded-full bg-primary" />}
                   </Link>
                 </li>
               );

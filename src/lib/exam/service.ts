@@ -290,11 +290,11 @@ function standardCounts(tables: ConversionTable[], subtests: Subtest[]): Record<
   return map;
 }
 
-export async function gradeAttempt(attemptId: string): Promise<AttemptResult> {
+export async function gradeAttempt(attemptId: string, at: string = new Date().toISOString()): Promise<AttemptResult> {
   const ctx = await loadExamContext(attemptId);
   if (!ctx) throw new Error(`Attempt not found: ${attemptId}`);
 
-  const submittedAt = new Date().toISOString();
+  const submittedAt = at;
   const secondsPerSubtest: Record<string, number> = {};
   for (const progress of ctx.attempt.subtestProgress) {
     secondsPerSubtest[progress.subtestId] = progress.secondsUsed;
@@ -313,6 +313,39 @@ export async function gradeAttempt(attemptId: string): Promise<AttemptResult> {
     submittedAt,
     totalParticipants: ctx.pkg.participantCount > 100 ? ctx.pkg.participantCount : 10_000,
   });
+}
+
+/**
+ * Records a manual score for one essay / short answer and re-grades the attempt.
+ *
+ * The score is clamped to the question's `maxScore` by the scorer, so the
+ * grader can type any number without corrupting the result.
+ */
+export async function gradeManualAnswer(
+  attemptId: string,
+  questionId: string,
+  score: number,
+  note?: string,
+): Promise<Attempt> {
+  const attempt = await dataSource.attempts.get(attemptId);
+  if (!attempt) throw new Error(`Attempt not found: ${attemptId}`);
+
+  const record = attempt.answers[questionId];
+  if (!record) throw new Error(`Answer not found: ${questionId}`);
+
+  const answers: Record<string, AnswerRecord> = {
+    ...attempt.answers,
+    [questionId]: {
+      ...record,
+      manualScore: score,
+      graderNote: note?.trim() || undefined,
+      gradedAt: new Date().toISOString(),
+    },
+  };
+
+  await dataSource.attempts.saveAnswers(attemptId, answers);
+  const result = await gradeAttempt(attemptId, attempt.submittedAt ?? new Date().toISOString());
+  return dataSource.attempts.submit(attemptId, result);
 }
 
 export async function submitAttempt(attemptId: string): Promise<Attempt> {

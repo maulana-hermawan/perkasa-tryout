@@ -502,3 +502,96 @@ describe("subtest & attempt scoring", () => {
     expect(result.status).toBe("auto");
   });
 });
+
+describe("manual grading", () => {
+  const essaySubtest: Subtest = {
+    id: "st",
+    testTypeId: "tt",
+    name: { id: "Essay" },
+    order: 1,
+    durationMinutes: 30,
+    questionCount: 1,
+    scoring: RULES,
+    passingGrade: null,
+    allowedQuestionTypes: ["essay"],
+    shuffleQuestions: false,
+    shuffleOptions: false,
+    allowBack: false,
+  };
+
+  const essay = base<EssayQuestion>({
+    id: "q9",
+    type: "essay",
+    testTypeId: "tt",
+    subtestId: "st",
+    difficulty: "medium",
+    topics: [],
+    tags: [],
+    prompt: { id: "<p>Jelaskan</p>" },
+    length: "long",
+    maxScore: 10,
+    keywords: [{ term: "hoaks", points: 3 }],
+    rubric: [],
+    manualGrading: true,
+  });
+
+  const answered = {
+    questionId: "q9",
+    type: "essay" as const,
+    value: { kind: "text" as const, text: "Verifikasi dulu sebelum membagikan." },
+    marked: false,
+    updatedAt: "",
+    timeSpentSeconds: 0,
+  };
+
+  it("ignores an ungraded essay so the result stays pending", () => {
+    const result = scoreAttempt({
+      attemptId: "att-essay",
+      subtests: [essaySubtest],
+      questions: [essay],
+      questionOrder: { st: ["q9"] },
+      answers: { q9: answered },
+      conversionTables: [],
+      startedAt: "2025-01-01T00:00:00.000Z",
+      submittedAt: "2025-01-01T00:30:00.000Z",
+    });
+    expect(result.status).toBe("awaiting-manual");
+    expect(result.totalScore).toBe(0);
+  });
+
+  it("uses the manual score once graded and marks the result graded", () => {
+    const result = scoreAttempt({
+      attemptId: "att-essay",
+      subtests: [essaySubtest],
+      questions: [essay],
+      questionOrder: { st: ["q9"] },
+      answers: { q9: { ...answered, manualScore: 8, gradedAt: "2025-01-02T00:00:00.000Z" } },
+      conversionTables: [],
+      startedAt: "2025-01-01T00:00:00.000Z",
+      submittedAt: "2025-01-01T00:30:00.000Z",
+    });
+    expect(result.status).toBe("graded");
+    expect(result.totalScore).toBe(8);
+    expect(result.maxScore).toBe(10);
+    expect(result.perSubtest[0]).toMatchObject({ correct: 1, wrong: 0, empty: 0 });
+  });
+
+  it("clamps a manual score to the question maximum", () => {
+    const result = scoreSubtest({
+      subtest: essaySubtest,
+      questions: [essay],
+      answers: { q9: { ...answered, manualScore: 99 } },
+    });
+    expect(result.rawScore).toBe(10);
+    expect(result.maxScore).toBe(10);
+  });
+
+  it("counts a zero manual score as wrong, not empty", () => {
+    const result = scoreSubtest({
+      subtest: essaySubtest,
+      questions: [essay],
+      answers: { q9: { ...answered, manualScore: 0 } },
+    });
+    expect(result).toMatchObject({ rawScore: 0, correct: 0, wrong: 1, empty: 0 });
+  });
+});

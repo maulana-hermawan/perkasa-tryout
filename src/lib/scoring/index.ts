@@ -85,6 +85,17 @@ export function scoreSubtest({
     const record = answers[question.id];
     const value = record?.value ?? null;
     const result = scoreQuestion(question, value, subtest.scoring);
+
+    // A manually graded answer wins over the automatic keyword score.
+    if (record?.manualScore !== undefined) {
+      rawScore += Math.max(0, Math.min(record.manualScore, result.maxPoints));
+      maxScore += result.maxPoints;
+      if (!isAnswered(value)) empty += 1;
+      else if (record.manualScore > 0) correct += 1;
+      else wrong += 1;
+      continue;
+    }
+
     rawScore += result.points;
     maxScore += result.maxPoints;
     if (!isAnswered(value) && result.correct === null) empty += 1;
@@ -217,12 +228,17 @@ export function scoreAttempt({
   const percentile = Math.min(99, Math.max(1, Math.round(percentage * 0.9) + jitter));
   const rank = Math.max(1, Math.round(totalParticipants * (1 - percentile / 100)) + 1);
 
-  const manualPending = perSubtest.some((item) =>
-    (questionOrder[item.subtestId] ?? []).some((id) => {
+  // Essays need a human score before the result is final.
+  let manualPending = false;
+  let manualDone = false;
+  for (const item of perSubtest) {
+    for (const id of questionOrder[item.subtestId] ?? []) {
       const question = byId.get(id);
-      return question?.type === "essay" && isAnswered(answers[id]?.value);
-    }),
-  );
+      if (question?.type !== "essay") continue;
+      if (answers[id]?.manualScore !== undefined) manualDone = true;
+      else if (isAnswered(answers[id]?.value)) manualPending = true;
+    }
+  }
 
   return {
     totalScore,
@@ -240,7 +256,7 @@ export function scoreAttempt({
     dimensions: aggregateDimensions(subtests, questions, answers),
     durationSeconds: Math.max(0, Math.round((new Date(submittedAt).getTime() - new Date(startedAt).getTime()) / 1000)),
     gradedAt: submittedAt,
-    status: manualPending ? "awaiting-manual" : "auto",
+    status: manualPending ? "awaiting-manual" : manualDone ? "graded" : "auto",
   };
 }
 

@@ -80,8 +80,23 @@ describe("seed database integrity", () => {
     for (const attempt of submitted) {
       expect(attempt.result).toBeDefined();
       expect(attempt.result!.maxScore).toBeGreaterThan(0);
-      expect(attempt.result!.totalScore).toBeGreaterThan(0);
       expect(attempt.result!.perSubtest.length).toBeGreaterThan(0);
+      // Essays are graded by an admin, so their score legitimately starts at 0.
+      if (attempt.result!.status === "awaiting-manual") {
+        expect(attempt.result!.totalScore).toBe(0);
+      } else {
+        expect(attempt.result!.totalScore).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("queues the essay attempt for manual grading", () => {
+    const attempt = db.attempts.find((item) => item.id === "att-umum-esai-1");
+    expect(attempt?.result?.status).toBe("awaiting-manual");
+    const answers = Object.values(attempt?.answers ?? {});
+    expect(answers.length).toBeGreaterThan(0);
+    for (const answer of answers) {
+      expect(answer.value && "text" in answer.value ? answer.value.text.trim().length : 0).toBeGreaterThan(50);
     }
   });
 

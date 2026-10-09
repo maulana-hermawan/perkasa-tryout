@@ -22,8 +22,6 @@ export interface AdminNavItem {
   href: string;
   labelKey: string;
   icon: LucideIcon;
-  /** Implemented sections render their own page. */
-  ready?: boolean;
 }
 
 export interface AdminNavGroup {
@@ -35,7 +33,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     titleKey: "admin.sectionTitle",
     items: [
-      { href: "/admin", labelKey: "nav.dashboard", icon: Gauge, ready: true },
+      { href: "/admin", labelKey: "nav.dashboard", icon: Gauge },
       { section: "paket", href: "/admin/paket", labelKey: "nav.packages", icon: Boxes },
       { section: "bank-soal", href: "/admin/bank-soal", labelKey: "nav.questionBank", icon: BookOpenCheck },
       { section: "sesi", href: "/admin/sesi", labelKey: "nav.sessions", icon: Radio },
@@ -70,6 +68,4 @@ export const ADMIN_BOTTOM_NAV: AdminNavItem[] = [
   { section: "pembayaran", href: "/admin/pembayaran", labelKey: "nav.payments", icon: CreditCard },
 ];
 
-export function findAdminSection(section: string) {
-  return ADMIN_NAV.flatMap((group) => group.items).find((item) => item.section === section);
-}
+
