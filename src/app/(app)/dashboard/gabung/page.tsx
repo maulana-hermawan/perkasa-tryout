@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatDurationClock, initials } from "@/lib/utils";
+import { digitsOnly, formatDurationClock, initials } from "@/lib/utils";
 
 export default function JoinSessionPage() {
   const { t, tx, locale } = useI18n();
@@ -102,11 +102,12 @@ export default function JoinSessionPage() {
               <Input
                 id="code"
                 value={code}
-                onChange={(event) => setCode(event.target.value.toUpperCase().slice(0, 6))}
+                onChange={(event) => setCode(digitsOnly(event.target.value).slice(0, 6))}
                 placeholder={t("session.codePlaceholder")}
                 className="text-center font-mono text-lg tracking-[0.35em]"
-                inputMode="text"
-                autoCapitalize="characters"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]*"
                 maxLength={6}
                 aria-invalid={Boolean(error)}
               />

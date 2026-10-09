@@ -4,7 +4,7 @@ import { bi, daysAgo, hoursAgo, hoursFromNow, minutesAgo } from "./helpers";
 export const SEED_SESSIONS: Session[] = [
   {
     id: "ses-live-umum",
-    code: "K7X2P9",
+    code: "472913",
     packageId: "pkg-umum-1",
     hostId: "usr-host",
     title: bi("Latihan Tes Umum – Sesi Live", "General Test Practice – Live Session"),
@@ -65,7 +65,7 @@ export const SEED_SESSIONS: Session[] = [
   },
   {
     id: "ses-scheduled-toefl",
-    code: "TFL24A",
+    code: "195830",
     packageId: "pkg-toefl-mini",
     hostId: "usr-host",
     title: bi("TOEFL Mini Test – Sesi Terjadwal", "TOEFL Mini Test – Scheduled Session"),
@@ -100,7 +100,7 @@ export const SEED_SESSIONS: Session[] = [
   },
   {
     id: "ses-kepribadian-selfpaced",
-    code: "PSI910",
+    code: "605247",
     packageId: "pkg-kepribadian",
     hostId: "usr-admin",
     title: bi("Tes Kepribadian – Self-paced", "Personality Test – Self-paced"),

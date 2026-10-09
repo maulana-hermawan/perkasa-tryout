@@ -579,7 +579,7 @@ export interface SessionParticipant {
 
 export interface Session {
   id: string;
-  /** 6-character join code. */
+  /** 6-digit join code (characters 0-9 only). */
   code: string;
   packageId: string;
   hostId: string;

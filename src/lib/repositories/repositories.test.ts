@@ -164,8 +164,8 @@ describe("payments & vouchers", () => {
 });
 
 describe("sessions & attempts", () => {
-  it("finds a session by code, case-insensitively", async () => {
-    const session = await dataSource.sessions.findByCode("k7x2p9");
+  it("finds a session by its 6-digit code", async () => {
+    const session = await dataSource.sessions.findByCode("472913");
     expect(session?.id).toBe("ses-live-umum");
     expect(await dataSource.sessions.findByCode("ZZZZZZ")).toBeNull();
   });

@@ -112,12 +112,12 @@ export default function HistoryPage() {
                         </Badge>
                       )}
                       {result?.status === "awaiting-manual" && (
-                        <Badge variant="warning">{t("common.comingSoon")}</Badge>
+                        <Badge variant="warning">{t("result.awaitingShort")}</Badge>
                       )}
                     </div>
-                    {pkg && (
+                    {result && (
                       <Button asChild size="sm" variant="outline">
-                        <Link href={`/tryout/${pkg.id}`}>{t("catalog.review")}</Link>
+                        <Link href={`/hasil/${attempt.id}`}>{t("catalog.review")}</Link>
                       </Button>
                     )}
                   </div>

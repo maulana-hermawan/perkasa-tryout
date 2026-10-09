@@ -9,6 +9,7 @@ import type {
   Payment,
   PaymentStatus,
   PublicUser,
+  ConversionTable,
   Question,
   QuestionType,
   Session,
@@ -87,6 +88,9 @@ export interface SubtestRepository extends CrudRepository<Subtest> {
   listByTestType(testTypeId: string): Promise<Subtest[]>;
 }
 
+/** Raw → scaled score tables (TOEFL). Read-mostly, so plain CRUD is enough. */
+export type ConversionTableRepository = CrudRepository<ConversionTable>;
+
 export interface TestTypeRepository extends CrudRepository<TestType> {
   getBySlug(slug: string): Promise<TestType | null>;
 }
@@ -150,6 +154,7 @@ export interface DataSource {
   categories: CategoryRepository;
   testTypes: TestTypeRepository;
   subtests: SubtestRepository;
+  conversionTables: ConversionTableRepository;
   questions: QuestionRepository;
   packages: PackageRepository;
   sessions: SessionRepository;

@@ -70,6 +70,28 @@ export function initials(name: string) {
     .join("");
 }
 
+/**
+ * Join code for live sessions — digits only (0–9) so it is easy to read aloud
+ * and type on a phone keypad. Call this from an event handler (never during
+ * render) because it is not deterministic.
+ */
+export function generateJoinCode(length = 6): string {
+  const bytes = new Uint32Array(length);
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < length; i++) bytes[i] = Math.floor(Math.random() * 4294967296);
+  }
+  let code = "";
+  for (let i = 0; i < length; i++) code += (bytes[i] % 10).toString();
+  return code;
+}
+
+/** Keeps only digits 0–9 — used by the join-code input. */
+export function digitsOnly(value: string): string {
+  return value.replace(/[^0-9]/g, "");
+}
+
 /** Stable pastel color derived from a string — used for avatars & session players. */
 export function colorFromString(value: string) {
   const hue = hashString(value) % 360;

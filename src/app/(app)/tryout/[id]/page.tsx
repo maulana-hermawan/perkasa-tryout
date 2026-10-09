@@ -10,6 +10,7 @@ import {
   FileText,
   Gauge,
   HelpCircle,
+  Loader2,
   Lock,
   PlayCircle,
   Star,
@@ -19,8 +20,11 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { formatCompact, formatCurrency, formatDate, formatNumber } from "@/lib/format";
 import { usePackageAccess } from "@/lib/hooks/use-package-access";
+import { startAttempt } from "@/lib/exam/service";
+import { useCurrentUser } from "@/lib/store/auth";
 import { useDbHydrated, useDatabase } from "@/lib/store/db";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { CheckoutSheet } from "@/components/checkout/checkout-sheet";
 import { DynamicIcon } from "@/components/common/dynamic-icon";
 import { PageLoader } from "@/components/common/page-loader";
@@ -44,8 +48,10 @@ export default function TryoutDetailPage() {
   const hydrated = useDbHydrated();
   const access = usePackageAccess(params.id);
 
+  const user = useCurrentUser();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [startOpen, setStartOpen] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [uniqueCode, setUniqueCode] = useState(0);
 
   if (!hydrated) return <PageLoader />;
@@ -78,6 +84,22 @@ export default function TryoutDetailPage() {
             : t("catalog.buy");
 
   const ctaDisabled = access.state === "pending";
+
+  async function handleStart() {
+    if (!user || !pkg || starting) return;
+    setStarting(true);
+    try {
+      if (access.activeAttempt) {
+        router.push(`/ruang/${access.activeAttempt.id}`);
+        return;
+      }
+      const attempt = await startAttempt({ userId: user.id, packageId: pkg.id });
+      router.push(`/ruang/${attempt.id}`);
+    } catch {
+      setStarting(false);
+      toast.error(t("errors.generic"));
+    }
+  }
 
   function handleCta() {
     if (access.state === "pending") return;
@@ -264,16 +286,42 @@ export default function TryoutDetailPage() {
         onOpenChange={setCheckoutOpen}
       />
 
-      <Dialog open={startOpen} onOpenChange={setStartOpen}>
+      <Dialog open={startOpen} onOpenChange={(open) => (starting ? null : setStartOpen(open))}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className={cn("flex items-center gap-2")}>
               <PlayCircle className="size-5 text-primary" />
-              {t("catalog.startSoon")}
+              {access.activeAttempt ? t("package.resumeTitle") : t("package.startTitle")}
             </DialogTitle>
-            <DialogDescription>{t("catalog.startSoonDesc")}</DialogDescription>
+            <DialogDescription>
+              {access.activeAttempt
+                ? t("package.resumeDescription")
+                : t("package.startDescription", { count: pkg.subtests.length, minutes: pkg.durationMinutes })}
+            </DialogDescription>
           </DialogHeader>
-          <Button onClick={() => setStartOpen(false)}>{t("common.close")}</Button>
+          <ul className="space-y-1.5 text-sm">
+            {pkg.subtests.map((entry) => {
+              const subtest = db.subtests.find((item) => item.id === entry.subtestId);
+              if (!subtest) return null;
+              return (
+                <li key={entry.subtestId} className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 px-2.5 py-2">
+                  <span className="min-w-0 truncate">{tx(subtest.name)}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {t("package.subtestQuestions", { count: entry.questionIds.length || subtest.questionCount })}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setStartOpen(false)} disabled={starting}>
+              {t("common.cancel")}
+            </Button>
+            <Button className="flex-1" onClick={handleStart} disabled={starting}>
+              {starting ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
+              {access.activeAttempt ? t("package.resumeCta") : t("package.startCta")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

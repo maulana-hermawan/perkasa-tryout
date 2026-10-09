@@ -7,6 +7,7 @@ import type {
   Payment,
   PaymentStatus,
   PublicUser,
+  ConversionTable,
   Question,
   Session,
   SessionParticipant,
@@ -99,6 +100,7 @@ const attemptList = (db: Database) => db.attempts;
 const paymentList = (db: Database) => db.payments;
 const voucherList = (db: Database) => db.vouchers;
 const categoryList = (db: Database) => db.categories;
+const conversionTableList = (db: Database) => db.conversionTables;
 const logList = (db: Database) => db.activityLogs;
 
 const setQuestions = (db: Database, list: Question[]): Database => ({ ...db, questions: list });
@@ -111,6 +113,7 @@ const setAttempts = (db: Database, list: Attempt[]): Database => ({ ...db, attem
 const setPayments = (db: Database, list: Payment[]): Database => ({ ...db, payments: list });
 const setVouchers = (db: Database, list: Voucher[]): Database => ({ ...db, vouchers: list });
 const setCategories = (db: Database, list: Category[]): Database => ({ ...db, categories: list });
+const setConversionTables = (db: Database, list: ConversionTable[]): Database => ({ ...db, conversionTables: list });
 const setLogs = (db: Database, list: ActivityLog[]): Database => ({ ...db, activityLogs: list });
 
 const toPublic = ({ password: _password, ...rest }: User): PublicUser => rest;
@@ -170,6 +173,12 @@ const categories: CategoryRepository = {
 const testTypes: TestTypeRepository = {
   ...crud<TestType>(testTypeList, setTestTypes),
   getBySlug: (slug) => read((db) => db.testTypes.find((type) => type.slug === slug) ?? null),
+};
+
+/* -------------------------- conversion tables ---------------------------- */
+
+const conversionTables: CrudRepository<ConversionTable> = {
+  ...crud<ConversionTable>(conversionTableList, setConversionTables),
 };
 
 /* ------------------------------ subtests --------------------------------- */
@@ -549,6 +558,7 @@ export const localDataSource: DataSource = {
   categories,
   testTypes,
   subtests,
+  conversionTables,
   questions,
   packages,
   sessions,
