@@ -101,7 +101,23 @@ perubahan pada komponen/pages.
 Render data selalu menunggu flag `hydrated`, sehingga tidak ada hydration mismatch;
 selama menunggu ditampilkan skeleton.
 
-### 3. i18n
+### 3. Desain & tema
+
+- **Token** di `src/app/globals.css`: palet netral slate dengan aksen indigo,
+  dua tingkat elevasi (`shadow-card`, `shadow-pop`) dan radius 14px. Kontras
+  teks ≥ 4.5:1 di tema terang maupun gelap.
+- **Font**: Inter Variable (`@fontsource-variable/inter`, self-hosted — tidak ada
+  permintaan ke Google Fonts saat build/runtime).
+- **Mobile-first**: semua target sentuh minimal 44px, navigasi utama di area
+  jempol, `pb-safe` untuk notch/home indicator, dan fokus ring yang jelas.
+- **Beginner friendly**: halaman masuk bisa login sekali ketuk lewat akun demo,
+  kata sandi bisa ditampilkan, filter berupa chip yang mudah ditekan, setiap
+  layar punya judul + subjudul yang menjelaskan "apa yang terjadi di sini".
+- Landing page: hero + preview ruang ujian, statistik, jenis tes, fitur,
+  3 langkah pemakaian, harga, FAQ (native `<details>`), CTA, dan footer
+  multi-kolom.
+
+### 4. i18n
 
 - Kamus: `src/lib/i18n/dictionaries/id.json` (sumber kebenaran) dan `en.json`.
 - `useI18n()` → `{ t(key, vars), tx(content), locale, setLocale }`.
@@ -110,7 +126,7 @@ selama menunggu ditampilkan skeleton.
   dipakai pada kunjungan berikutnya lewat cookie.
 - **Tidak ada teks UI yang di-hardcode** — semua melalui kamus.
 
-### 4. Model domain (`src/types`)
+### 5. Model domain (`src/types`)
 
 `TestType → Subtest → Question (discriminated union) → Package (Tryout) → Session`,
 plus `Attempt`, `Payment`, `Voucher`, `User`, `AppSettings`, `ActivityLog`.
@@ -123,13 +139,14 @@ true-false · matching · listening · ordering · image-choice · likert · gro
 kecermatan-karakter · kecermatan-kraepelin · kecermatan-perbandingan
 ```
 
-### 5. Mesin ujian (`src/lib/exam`)
+### 6. Mesin ujian & sesi (`src/lib/exam`)
 
 ```
-service.ts        startAttempt · loadExamContext · saveAnswers · submitAttempt · gradeAttempt
-generators.ts     generator soal runtime (Tes Kecermatan), deterministik per attempt
+service.ts          startAttempt · loadExamContext · saveAnswers · submitAttempt · gradeAttempt
+generators.ts       generator soal runtime (Tes Kecermatan), deterministik per attempt
 use-exam-engine.ts  hook ruang ujian: fase, timer, autosave, navigasi, auto-submit
-answer-format.ts  ringkasan jawaban ("jawaban Anda" vs "kunci jawaban")
+answer-format.ts    ringkasan jawaban ("jawaban Anda" vs "kunci jawaban")
+session-service.ts  buat/ubah/hapus sesi live, kode join 6 digit, sinkron progres peserta
 ```
 
 - **Timer per subtes.** Subtes punya `durationMinutes` sendiri; bila kosong, durasi
@@ -151,7 +168,7 @@ answer-format.ts  ringkasan jawaban ("jawaban Anda" vs "kunci jawaban")
 - **Generator deterministik**: `createRng(hash(attemptId + subtestId))` — attempt yang
   sama selalu menghasilkan soal yang sama.
 
-### 6. Scoring
+### 7. Scoring
 
 `src/lib/scoring` memisahkan penilaian per tipe soal melalui **registry** — menambah
 tipe soal baru = menambah satu entri `scorers`.
@@ -167,10 +184,28 @@ toleransi numerik & regex untuk isian, keyword otomatis untuk esai, reverse scor
 Likert, tabel konversi TOEFL (dengan proyeksi raw → panjang section penuh), serta
 passing grade yang diskalakan proporsional terhadap jumlah soal paket.
 
-### 7. Alur peserta
+### 8. Sesi live (host)
+
+- Host membuat sesi dari `/host`: pilih paket, mode (live/mandiri), leaderboard,
+  batas peserta → kode join **6 digit angka** dibuat otomatis
+  (`generateJoinCode`, unik terhadap sesi yang ada).
+- Ruang host `/host/[id]`: kode besar + tombol salin, kontrol
+  Mulai / Jeda / Lanjut / Akhiri, monitor progres peserta (bar + jawaban terjawab),
+  dan leaderboard sementara (podium 1–3 diberi warna).
+- Peserta mengetik kode di `/dashboard/gabung` (keypad angka). Setelah gabung,
+  ia melihat lobi + daftar peserta; tombol **Mulai mengerjakan** aktif begitu
+  host menjalankan sesi. Attempt dibuat dengan `sessionId`, lalu progres peserta
+  disinkronkan ke sesi setiap kali jawaban tersimpan dan saat submit
+  (status `finished` + skor).
+- Keterbatasan demo: sinkronisasi terjadi di browser yang sama karena backend
+  masih mock (localStorage). Antarmuka sudah memakai `dataSource`, jadi
+  menggantinya dengan Supabase Realtime/Firestore tidak mengubah UI.
+
+### 9. Alur peserta
 
 ```
-/                 landing
+/                 landing (hero, fitur, cara kerja, harga, FAQ)
+/host · /host/[id] sesi live milik host + ruang host
 /login /register  auth (mock)
 /dashboard        katalog + filter (kategori, harga, pencarian)
 /tryout/[id]      detail paket → "Mulai sekarang" → startAttempt()
@@ -226,6 +261,8 @@ npm run test
 - `src/components/exam/question-input.test.tsx` — renderer setiap tipe soal
   (14 tipe) dan nilai `AnswerValue` yang dikembalikan ke engine.
 - `src/lib/utils.test.ts` — kode join 6 digit (0–9), `digitsOnly`, hash, shuffle.
+- `src/lib/exam/session.test.ts` — pembuatan sesi (kode unik 6 digit), gabung
+  peserta, pembaruan progres, transisi status, dan hapus sesi.
 
 ---
 
@@ -249,7 +286,8 @@ npm run test
 2. ✅ **Hasil & pembahasan** (`/hasil/[attemptId]`, `/hasil/[attemptId]/pembahasan`) —
    skor per subtes, passing grade, persentil, ranking nasional, profil kepribadian,
    pembahasan per soal dengan gate freemium ("Buka Pembahasan" lewat pembayaran).
-3. **Sesi live** — lobby host, monitor progres peserta, leaderboard, kode join 6 digit.
+3. ✅ **Sesi live** — `/host` + `/host/[id]`: kode join 6 digit, kontrol
+   mulai/jeda/akhiri, monitor progres, leaderboard, lobi peserta.
 4. **Editor soal** — Tiptap + MathLive (toolbar Word-like, sisip rumus, gambar, audio,
    tabel) dan CRUD bank soal / paket / subtes / tipe tes.
 5. **Panel admin lengkap** — CRUD seluruh entitas, verifikasi pembayaran, penilaian

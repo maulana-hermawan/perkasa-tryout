@@ -132,24 +132,27 @@ export default function ExamRoomPage() {
         )}
 
         {phase === "working" && !isKecermatan && question && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("exam.questionLabel", { number: index + 1, total: ids.length })}
-              </span>
-              {answers[question.id]?.marked && <Badge variant="warning">{t("exam.markShort")}</Badge>}
-            </div>
+          <Card className="gap-0 shadow-card">
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-muted px-2.5 py-1 text-xs font-semibold tabular-nums">
+                  {index + 1}
+                  <span className="font-normal text-muted-foreground">/ {ids.length}</span>
+                </span>
+                {answers[question.id]?.marked && <Badge variant="warning">{t("exam.markShort")}</Badge>}
+              </div>
 
-            {question.type !== "listening" && question.type !== "group" && (
-              <RichContent content={question.prompt} className="text-[0.95rem] leading-relaxed" />
-            )}
+              {question.type !== "listening" && question.type !== "group" && (
+                <RichContent content={question.prompt} className="text-[1rem] leading-relaxed" />
+              )}
 
-            <QuestionInput
-              question={question}
-              value={answers[question.id]?.value ?? null}
-              onChange={(value) => engine.setAnswer(question.id, value)}
-            />
-          </div>
+              <QuestionInput
+                question={question}
+                value={answers[question.id]?.value ?? null}
+                onChange={(value) => engine.setAnswer(question.id, value)}
+              />
+            </CardContent>
+          </Card>
         )}
       </main>
 

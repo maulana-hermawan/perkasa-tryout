@@ -57,7 +57,7 @@ export function PackageCard({
   const { t, tx, locale } = useI18n();
 
   return (
-    <Card className="group overflow-hidden gap-0 py-0 transition-shadow hover:shadow-md">
+    <Card className="group overflow-hidden gap-0 rounded-2xl py-0 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-pop">
       <Link href={href} className="relative block aspect-[16/9] w-full overflow-hidden">
         <PackageThumbnail thumbnail={pkg.thumbnail} />
         <span className="absolute inset-0 flex items-center justify-center text-white/90">

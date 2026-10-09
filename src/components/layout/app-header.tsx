@@ -11,7 +11,7 @@ import { Brand } from "@/components/common/brand";
 import { LanguageToggle } from "@/components/common/language-toggle";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { UserMenu } from "@/components/common/user-menu";
-import { PARTICIPANT_NAV } from "@/components/layout/bottom-nav";
+import { useParticipantNav } from "@/components/layout/bottom-nav";
 import { Button } from "@/components/ui/button";
 
 export function AppHeader({
@@ -25,6 +25,7 @@ export function AppHeader({
   const { t } = useI18n();
   const user = useCurrentUser();
   const pathname = usePathname();
+  const nav = useParticipantNav();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md pt-safe">
@@ -33,7 +34,7 @@ export function AppHeader({
 
         {showDesktopNav && user && (
           <nav aria-label={t("nav.mainNavigation")} className="ml-4 hidden items-center gap-1 md:flex">
-            {PARTICIPANT_NAV.map((item) => {
+            {nav.map((item) => {
               const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
               const Icon = item.icon;
               return (

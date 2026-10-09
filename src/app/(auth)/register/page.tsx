@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/common/password-input";
 
 export default function RegisterPage() {
   const { t } = useI18n();
@@ -55,7 +56,10 @@ export default function RegisterPage() {
     <Card className="gap-4">
       <CardHeader>
         <CardTitle className="text-xl">{t("auth.registerTitle")}</CardTitle>
-        <CardDescription>{t("auth.registerSubtitle")}</CardDescription>
+        <CardDescription>
+          {t("auth.registerSubtitle")}{" "}
+          <span className="font-medium text-primary">{t("auth.registerCta")}</span>
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form className="space-y-3" onSubmit={handleSubmit}>
@@ -98,9 +102,8 @@ export default function RegisterPage() {
 
           <div className="space-y-1.5">
             <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="new-password"
               placeholder={t("auth.passwordPlaceholder")}
               value={form.password}
@@ -110,9 +113,8 @@ export default function RegisterPage() {
 
           <div className="space-y-1.5">
             <Label htmlFor="confirm">{t("auth.confirmPasswordLabel")}</Label>
-            <Input
+            <PasswordInput
               id="confirm"
-              type="password"
               autoComplete="new-password"
               value={form.confirm}
               onChange={update("confirm")}

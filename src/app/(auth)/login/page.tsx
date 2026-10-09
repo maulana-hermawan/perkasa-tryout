@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/common/password-input";
 import { Separator } from "@/components/ui/separator";
 import type { Role } from "@/types";
 
@@ -103,9 +104,8 @@ function LoginForm() {
 
           <div className="space-y-1.5">
             <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               placeholder={t("auth.passwordPlaceholder")}
               value={password}

@@ -12,6 +12,7 @@ import {
   type ExamContext,
 } from "./service";
 import { columnCount, columnItemCount, columnSeconds } from "./generators";
+import { dataSource } from "@/lib/repositories";
 
 export type ExamPhase = "loading" | "intro" | "working" | "submitting" | "done";
 export type SaveState = "idle" | "pending" | "saving" | "saved";
@@ -192,6 +193,34 @@ export function useExamEngine(attemptId: string): ExamEngine {
 
   /* ------------------------------- saving -------------------------------- */
 
+  /**
+   * Mirrors the participant row on the host screen (live sessions). It re-reads
+   * the attempt instead of capturing render state so it can be called from the
+   * autosave timer without going stale.
+   */
+  const syncSession = useCallback(
+    async (options?: { finished?: boolean; score?: number }) => {
+      const attempt = await dataSource.attempts.get(attemptId);
+      if (!attempt?.sessionId) return;
+      const session = await dataSource.sessions.get(attempt.sessionId);
+      const me = session?.participants.find(
+        (participant) => participant.userId === attempt.userId || participant.attemptId === attempt.id,
+      );
+      if (!me || !session) return;
+
+      const ids = Object.values(attempt.questionOrder).flat();
+      const answered = ids.filter((id) => Boolean(attempt.answers[id]?.value)).length;
+      await dataSource.sessions.updateParticipant(session.id, me.id, {
+        answered,
+        total: ids.length,
+        score: options?.score ?? me.score,
+        status: options?.finished ? "finished" : me.status,
+        attemptId: attempt.id,
+      });
+    },
+    [attemptId],
+  );
+
   const flush = useCallback(async () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -203,7 +232,8 @@ export function useExamEngine(attemptId: string): ExamEngine {
     setSaveState("saving");
     await saveAnswers(attemptId, dirty);
     setSaveState("saved");
-  }, [attemptId]);
+    await syncSession();
+  }, [attemptId, syncSession]);
 
   const scheduleSave = useCallback(() => {
     setSaveState("pending");
@@ -332,7 +362,8 @@ export function useExamEngine(attemptId: string): ExamEngine {
         const isLast = subtestIndex >= ctx.subtests.length - 1;
         if (isLast) {
           setPhase("submitting");
-          await submitAttempt(attemptId);
+          const submitted = await submitAttempt(attemptId);
+          await syncSession({ finished: true, score: Math.round(submitted.result?.totalScore ?? 0) });
           setPhase("done");
           router.replace(`/hasil/${attemptId}${auto ? "?auto=1" : ""}`);
           return;
@@ -343,7 +374,7 @@ export function useExamEngine(attemptId: string): ExamEngine {
         finishingRef.current = false;
       })();
     },
-    [attemptId, ctx, flush, router, subtest, subtestIndex],
+    [attemptId, ctx, flush, router, subtest, subtestIndex, syncSession],
   );
 
   const submit = useCallback(() => {
@@ -367,11 +398,12 @@ export function useExamEngine(attemptId: string): ExamEngine {
         );
         await persistProgress(attemptId, { subtestProgress: progress });
       }
-      await submitAttempt(attemptId);
+      const submitted = await submitAttempt(attemptId);
+      await syncSession({ finished: true, score: Math.round(submitted.result?.totalScore ?? 0) });
       setPhase("done");
       router.replace(`/hasil/${attemptId}`);
     })();
-  }, [attemptId, ctx, flush, phase, router, subtest]);
+  }, [attemptId, ctx, flush, phase, router, subtest, syncSession]);
 
   /* ------------------------------ auto finish ---------------------------- */
 

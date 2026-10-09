@@ -64,14 +64,14 @@ function OptionRow({
         "flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors",
         "focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
         selected
-          ? "border-primary bg-primary/5"
-          : "border-border bg-background hover:bg-accent/50 active:bg-accent",
+          ? "border-primary bg-primary/5 shadow-card"
+          : "border-border bg-card hover:bg-accent/40 active:bg-accent/60",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
       <span
         className={cn(
-          "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
+          "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold tabular-nums",
           selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-muted text-foreground",
         )}
       >

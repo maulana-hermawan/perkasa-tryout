@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { History, Home, KeyRound, UserRound, type LucideIcon } from "lucide-react";
+import { History, Home, KeyRound, Radio, UserRound, type LucideIcon } from "lucide-react";
 
 import { useI18n } from "@/lib/i18n";
+import { useCurrentUser } from "@/lib/store/auth";
+import type { Role } from "@/types";
 import { cn } from "@/lib/utils";
 
 export interface NavItem {
@@ -12,22 +14,33 @@ export interface NavItem {
   labelKey: string;
   icon: LucideIcon;
   exact?: boolean;
+  /** Only shown to these roles (default: everyone). */
+  roles?: Role[];
 }
 
 export const PARTICIPANT_NAV: NavItem[] = [
   { href: "/dashboard", labelKey: "nav.home", icon: Home, exact: true },
   { href: "/dashboard/riwayat", labelKey: "nav.history", icon: History },
   { href: "/dashboard/gabung", labelKey: "nav.join", icon: KeyRound },
+  { href: "/host", labelKey: "nav.mySessions", icon: Radio, roles: ["host", "admin"] },
   { href: "/profil", labelKey: "nav.profile", icon: UserRound },
 ];
+
+/** Nav items for the signed-in user — hosts get the session entry. */
+export function useParticipantNav(): NavItem[] {
+  const user = useCurrentUser();
+  return PARTICIPANT_NAV.filter((item) => !item.roles || (user && item.roles.includes(user.role)));
+}
 
 function isActive(pathname: string, item: NavItem) {
   return item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(`${item.href}/`);
 }
 
-export function BottomNav({ items = PARTICIPANT_NAV }: { items?: NavItem[] }) {
+export function BottomNav({ items }: { items?: NavItem[] }) {
   const { t } = useI18n();
   const pathname = usePathname();
+  const fallback = useParticipantNav();
+  const entries = items ?? fallback;
 
   return (
     <nav
@@ -35,7 +48,7 @@ export function BottomNav({ items = PARTICIPANT_NAV }: { items?: NavItem[] }) {
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur-md pb-safe md:hidden"
     >
       <ul className="mx-auto flex w-full max-w-6xl items-stretch">
-        {items.map((item) => {
+        {entries.map((item) => {
           const active = isActive(pathname, item);
           const Icon = item.icon;
           return (

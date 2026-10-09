@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalendarClock, KeyRound, Radio, Timer, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CalendarClock, KeyRound, Loader2, PlayCircle, Radio, Timer, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { useI18n } from "@/lib/i18n";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { dataSource } from "@/lib/repositories";
+import { startAttempt } from "@/lib/exam/service";
 import { useCurrentUser } from "@/lib/store/auth";
 import { useDatabase } from "@/lib/store/db";
 import type { Session } from "@/types";
@@ -15,18 +17,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { digitsOnly, formatDurationClock, initials } from "@/lib/utils";
 
 export default function JoinSessionPage() {
   const { t, tx, locale } = useI18n();
   const db = useDatabase();
   const user = useCurrentUser();
+  const router = useRouter();
 
   const [code, setCode] = useState("");
-  const [session, setSession] = useState<Session | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [joinedId, setJoinedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
-  const [joinedId, setJoinedId] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -34,12 +40,12 @@ export default function JoinSessionPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const live = session ? db.sessions.find((item) => item.id === session.id) ?? session : null;
+  const live: Session | null = sessionId ? (db.sessions.find((item) => item.id === sessionId) ?? null) : null;
 
   async function handleFind(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    setSession(null);
+    setSessionId(null);
     if (code.trim().length !== 6) {
       setError(t("session.codeInvalid"));
       return;
@@ -51,7 +57,7 @@ export default function JoinSessionPage() {
       setError(t("session.codeNotFound"));
       return;
     }
-    setSession(found);
+    setSessionId(found.id);
   }
 
   async function handleJoin() {
@@ -71,7 +77,7 @@ export default function JoinSessionPage() {
       joinedAt: new Date().toISOString(),
       status: "online",
       answered: 0,
-      total: 0,
+      total: live.participants[0]?.total ?? 0,
       currentIndex: 0,
       score: 0,
       tabSwitchCount: 0,
@@ -80,12 +86,34 @@ export default function JoinSessionPage() {
     toast.success(t("session.joinSuccess", { code: live.code }));
   }
 
+  async function handleStart() {
+    if (!live || !user || starting) return;
+    setStarting(true);
+    try {
+      const attempt = await startAttempt({ userId: user.id, packageId: live.packageId, sessionId: live.id });
+      if (joinedId) {
+        await dataSource.sessions.updateParticipant(live.id, joinedId, {
+          attemptId: attempt.id,
+          status: "online",
+        });
+      }
+      router.push(`/ruang/${attempt.id}`);
+    } catch {
+      setStarting(false);
+      toast.error(t("errors.generic"));
+    }
+  }
+
   const modeLabel = live
     ? live.mode === "self-paced"
       ? t("session.selfPaced")
       : t(`session.${live.mode}`)
     : "";
   const countdown = live?.opensAt ? Math.max(0, Math.round((new Date(live.opensAt).getTime() - now) / 1000)) : 0;
+  const statusLabel = live
+    ? t(`session.status${live.status.charAt(0).toUpperCase()}${live.status.slice(1)}`)
+    : "";
+  const canStart = Boolean(live && joinedId && (live.status === "running" || live.mode === "self-paced"));
 
   return (
     <section className="space-y-4">
@@ -118,7 +146,7 @@ export default function JoinSessionPage() {
               </p>
             )}
             <Button type="submit" className="w-full" disabled={searching}>
-              <KeyRound className="size-4" />
+              {searching ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
               {t("session.joinSubmit")}
             </Button>
           </form>
@@ -126,19 +154,24 @@ export default function JoinSessionPage() {
       </Card>
 
       {live && (
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden py-0 shadow-card">
+          <CardHeader className="pt-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <CardTitle>{tx(live.title)}</CardTitle>
                 <CardDescription className="font-mono text-sm tracking-widest">{live.code}</CardDescription>
               </div>
-              <Badge variant={live.status === "running" ? "success" : live.status === "ended" ? "muted" : "warning"}>
+              <Badge
+                variant={
+                  live.status === "running" ? "success" : live.status === "ended" ? "muted" : "warning"
+                }
+              >
                 {live.mode === "live" ? <Radio className="size-3" /> : null}
-                {modeLabel}
+                {statusLabel}
               </Badge>
             </div>
           </CardHeader>
+
           <CardContent className="space-y-3">
             <dl className="grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
@@ -166,31 +199,68 @@ export default function JoinSessionPage() {
               )}
             </dl>
 
-            <Button className="w-full" onClick={handleJoin} disabled={Boolean(joinedId) || live.status === "ended"}>
-              {joinedId ? t("session.lobbyTitle") : t("session.joinSubmit")}
-            </Button>
+            <Separator />
+
+            {joinedId ? (
+              canStart ? (
+                <Button className="w-full" size="lg" onClick={handleStart} disabled={starting}>
+                  {starting ? <Loader2 className="size-4 animate-spin" /> : <PlayCircle className="size-4" />}
+                  {t("session.startParticipant")}
+                </Button>
+              ) : (
+                <p className="flex items-center justify-center gap-2 rounded-xl bg-muted/60 py-3 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  {live.status === "ended" ? t("session.sessionClosed") : t("session.waiting")}
+                </p>
+              )
+            ) : (
+              <Button
+                className="w-full"
+                size="lg"
+                variant="outline"
+                onClick={handleJoin}
+                disabled={live.status === "ended"}
+              >
+                {t("session.joinSubmit")}
+              </Button>
+            )}
 
             {live.participants.length > 0 && (
               <div className="space-y-2 border-t border-border pt-3">
                 <p className="text-xs font-medium text-muted-foreground">{t("session.lobbyTitle")}</p>
                 <ul className="flex flex-wrap gap-2">
-                  {live.participants.map((participant) => (
-                    <li
-                      key={participant.id}
-                      className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pr-3 pl-1"
-                    >
-                      <span
-                        className="flex size-7 items-center justify-center rounded-full text-[0.625rem] font-semibold text-white"
-                        style={{ backgroundColor: participant.avatarColor }}
+                  {live.participants.map((participant) => {
+                    const total = participant.total || 1;
+                    return (
+                      <li
+                        key={participant.id}
+                        className="flex w-full items-center gap-2 rounded-xl border border-border bg-background p-2 sm:w-auto sm:flex-1"
                       >
-                        {initials(participant.name)}
-                      </span>
-                      <span className="text-xs font-medium">{participant.name}</span>
-                    </li>
-                  ))}
+                        <span
+                          className="flex size-8 shrink-0 items-center justify-center rounded-full text-[0.625rem] font-semibold text-white"
+                          style={{ backgroundColor: participant.avatarColor }}
+                        >
+                          {initials(participant.name)}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-medium">{participant.name}</span>
+                          {participant.total > 0 && (
+                            <Progress value={(participant.answered / total) * 100} className="mt-1 h-1" />
+                          )}
+                        </span>
+                        {participant.status === "finished" && (
+                          <Badge variant="success" className="tabular-nums">
+                            {participant.score}
+                          </Badge>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             )}
+
+            <p className="text-center text-[0.6875rem] text-muted-foreground">{t("session.pollNotice")}</p>
           </CardContent>
         </Card>
       )}
