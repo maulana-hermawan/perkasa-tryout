@@ -215,6 +215,40 @@ passing grade yang diskalakan proporsional terhadap jumlah soal paket.
 /dashboard/saya · /riwayat · /gabung
 ```
 
+### 10. Panel admin
+
+Semua bagian di bawah `/admin` sudah memiliki halaman sendiri (tidak ada lagi
+placeholder "coming soon"):
+
+| Rute                 | Isi                                                                 |
+| -------------------- | ------------------------------------------------------------------- |
+| `/admin`             | Statistik (pengguna, pendapatan, menunggu verifikasi, attempt), paket populer, pembayaran & aktivitas terbaru |
+| `/admin/paket`       | Daftar paket, filter/cari, tayangkan–arsipkan, pratinjau             |
+| `/admin/bank-soal`   | Bank soal: filter tipe/kesulitan/subtes, pencarian, pratinjau, duplikasi, hapus, paging, tombol **Soal baru** |
+| `/admin/bank-soal/baru` · `/admin/bank-soal/[id]` | Editor soal (lihat §11)            |
+| `/admin/sesi`        | Sesi live: kode, host, status, buka ruang host, akhiri, hapus        |
+| `/admin/pembayaran`  | Verifikasi pembayaran: chip status + jumlah, cari, setujui/tolak (alasan), pratinjau bukti |
+| `/admin/pengguna`    | Pengguna: peran, status, jumlah attempt, suspend/aktifkan, hapus (admin dilindungi) |
+| `/admin/tipe-tes` · `/admin/subtes` · `/admin/kategori` | Taksonomi: nama ID/EN, slug, ikon, urutan, durasi, jumlah soal, passing grade, jenis hasil |
+| `/admin/voucher`     | CRUD voucher: persen/nominal, minimal belanja, maksimal potongan, kuota, masa berlaku |
+| `/admin/penilaian`   | Antrean penilaian esai: jawaban peserta, rubrik, input skor + catatan, simpan → attempt dinilai ulang |
+| `/admin/log`         | Log aktivitas: timeline dengan label aksi yang mudah dibaca, filter aksi, pencarian |
+| `/admin/pengaturan`  | Identitas & kontak, sistem (bahasa, zona waktu, auto-approve, maintenance), metode pembayaran, preferensi admin, reset data demo |
+
+### 11. Editor soal (Tiptap)
+
+`src/components/admin/rich-text-editor.tsx` membungkus **Tiptap 3** dengan toolbar
+yang ramah sentuhan: tebal, miring, garis bawah, coret, kode, daftar berbutir &
+bernomor, kutipan, urungkan/ulangi, dan **sisip rumus LaTeX** yang menghasilkan
+`<span data-math="inline" data-latex="…">` — bentuk yang sudah dikenali
+`<RichContent />` (di-render KaTeX) dan lolos allow-list `sanitizeHtml`.
+
+`src/components/admin/question-form.tsx` memakainya untuk menyunting
+**multiple-choice, multiple-answer, true/false, fill-blank, dan esai**: prompt,
+opsi dengan tombol kunci A/B/C/D, jawaban yang diterima untuk isian, skor
+maksimal, kata kunci otomatis, minimal kata, pembahasan, plus pratinjau langsung.
+Tipe yang digenerate saat ujian (Tes Kecermatan) tetap tidak disunting manual.
+
 ---
 
 ## Seed data
@@ -226,11 +260,15 @@ passing grade yang diskalakan proporsional terhadap jumlah soal paket.
 | Tes Kecermatan Lengkap (3 Varian)         | Freemium    | Karakter hilang, Kraepelin/Pauli, Perbandingan angka        |
 | Tes Kepribadian Big Five                  | Gratis      | 12 item Likert → 5 dimensi (profil, bukan benar/salah)      |
 | Tes Umum: Pengetahuan, Logika & Esai      | Berbayar    | Pengetahuan umum (7 tipe soal), Logika (minus 1), Esai (2)  |
+| Tryout UTBK – Penalaran, Kuantitatif & Literasi | Freemium | Penalaran umum (4), Kuantitatif (4, ada KaTeX), Literasi (3 + 1 stimulus grup) |
+| Tes Potensi Dasar Kedinasan               | Gratis      | Pengetahuan umum, Logika — tanpa penalti, cocok untuk pemula |
 
 Selain itu: 8 pengguna (admin/host/peserta/suspended), 6 kategori, 5 tipe tes,
 15 subtes, 3 tabel konversi TOEFL, 3 sesi (live/terjadwal/self-paced), 4 attempt
 (3 selesai beserta hasil + 1 berjalan), 5 pembayaran (approved/pending/rejected),
-4 voucher, 8 log aktivitas, dan metode pembayaran (bank/e-wallet/QRIS).
+5 voucher, 8 log aktivitas, dan metode pembayaran (bank/e-wallet/QRIS). Satu
+attempt esai (`att-umum-esai-1`) sengaja dibiarkan berstatus
+`awaiting-manual` agar antrean penilaian esai di `/admin/penilaian` berisi data.
 
 Soal kecermatan **digenerate saat ujian dimulai** dari konfigurasi subtes
 (jumlah kolom, soal per kolom, detik per kolom) — bukan soal statis di bank soal.
@@ -263,6 +301,11 @@ npm run test
 - `src/lib/utils.test.ts` — kode join 6 digit (0–9), `digitsOnly`, hash, shuffle.
 - `src/lib/exam/session.test.ts` — pembuatan sesi (kode unik 6 digit), gabung
   peserta, pembaruan progres, transisi status, dan hapus sesi.
+- `src/lib/scoring/scoring.test.ts` — 15 tipe soal, penalti, skor parsial,
+  konversi TOEFL, dan penilaian manual esai (skor manual menang, status
+  `awaiting-manual` → `graded`).
+- `src/components/admin/question-form.test.tsx` — editor soal menyala di jsdom:
+  toolbar Tiptap, pilihan tipe/subtes, dan empat opsi jawaban bawaan.
 
 ---
 
@@ -288,9 +331,21 @@ npm run test
    pembahasan per soal dengan gate freemium ("Buka Pembahasan" lewat pembayaran).
 3. ✅ **Sesi live** — `/host` + `/host/[id]`: kode join 6 digit, kontrol
    mulai/jeda/akhiri, monitor progres, leaderboard, lobi peserta.
-4. **Editor soal** — Tiptap + MathLive (toolbar Word-like, sisip rumus, gambar, audio,
-   tabel) dan CRUD bank soal / paket / subtes / tipe tes.
-5. **Panel admin lengkap** — CRUD seluruh entitas, verifikasi pembayaran, penilaian
-   esai manual, voucher, pengaturan, log aktivitas.
-6. **Pembersihan soal generate** — `pruneGeneratedQuestions(attemptId)` sudah tersedia
-   di `src/lib/exam/service.ts`; tinggal dipanggil dari jadwal/retensi admin.
+4. ✅ **Editor soal** — Tiptap 3 dengan toolbar tebal/miring/daftar/rumus LaTeX,
+   plus form untuk pilihan ganda, pilihan ganda jamak, benar/salah, isian, dan
+   esai (kunci jawaban, rubrik, kata kunci) beserta pratinjau.
+5. ✅ **Panel admin lengkap** — seluruh entitas bisa dikelola (paket, bank soal,
+   sesi, pembayaran, pengguna, voucher, taksonomi, penilaian esai, log,
+   pengaturan).
+6. **Backend nyata** — ganti `localDataSource` di `src/lib/repositories/index.ts`
+   dengan Supabase/Firebase; komponen tidak perlu disentuh karena semua akses
+   lewat `dataSource`.
+7. **Ekspor nilai & sertifikat** — unduhan PDF hasil tryout, rekap nilai host,
+   dan sertifikat kelulusan.
+8. **Editor lanjutan** — unggah gambar & audio langsung ke storage, tabel soal,
+   impor soal massal (CSV/JSON), dan MathLive untuk input rumus visual.
+
+Soal yang digenerate untuk Tes Kecermatan disimpan dengan tag `attempt:<id>`.
+Bank soal **menyembunyikannya secara default** (ada toggle "Sertakan soal
+otomatis") — sengaja tidak dihapus otomatis, karena attempt yang sudah selesai
+masih membutuhkannya untuk menampilkan pembahasan.
