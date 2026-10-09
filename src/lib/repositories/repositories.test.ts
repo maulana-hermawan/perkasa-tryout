@@ -1,6 +1,12 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { dataSource } from "./index";
 import { useDbStore } from "@/lib/store/db";
+import { SEED_PACKAGES } from "@/lib/seed/packages";
+
+/** Number of published packages in the seed — keeps the counts below honest. */
+const publishedCount = SEED_PACKAGES.filter((pkg) => pkg.status === "published").length;
+const seedCount = (pricingModel: "free" | "freemium" | "paid") =>
+  SEED_PACKAGES.filter((pkg) => pkg.status === "published" && pkg.pricingModel === pricingModel).length;
 
 /** The mock backend keeps everything in memory, so reset it before the run. */
 beforeAll(() => {
@@ -48,13 +54,13 @@ describe("packages", () => {
   it("lists only published packages by default", async () => {
     const all = await dataSource.packages.listByFilter({});
     expect(all.every((pkg) => pkg.status === "published")).toBe(true);
-    expect(all).toHaveLength(6);
+    expect(all).toHaveLength(publishedCount);
   });
 
   it("filters by pricing model", async () => {
-    expect(await dataSource.packages.listByFilter({ pricingModel: "free" })).toHaveLength(2);
-    expect(await dataSource.packages.listByFilter({ pricingModel: "freemium" })).toHaveLength(3);
-    expect(await dataSource.packages.listByFilter({ pricingModel: "paid" })).toHaveLength(1);
+    expect(await dataSource.packages.listByFilter({ pricingModel: "free" })).toHaveLength(seedCount("free"));
+    expect(await dataSource.packages.listByFilter({ pricingModel: "freemium" })).toHaveLength(seedCount("freemium"));
+    expect(await dataSource.packages.listByFilter({ pricingModel: "paid" })).toHaveLength(seedCount("paid"));
   });
 
   it("filters by category and search", async () => {
