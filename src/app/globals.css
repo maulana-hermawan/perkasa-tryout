@@ -325,6 +325,55 @@
   @apply inline-block;
 }
 
+/* ------------------------------ editor ---------------------------------- */
+
+.tiptap {
+  @apply min-h-[inherit];
+}
+/* Placeholder (Tiptap Placeholder extension) */
+.tiptap p.is-editor-empty:first-child::before {
+  @apply pointer-events-none float-left h-0 text-muted-foreground;
+  content: attr(data-placeholder);
+}
+.tiptap:focus {
+  @apply outline-none;
+}
+.tiptap h2 {
+  @apply text-base font-semibold;
+}
+.tiptap h3 {
+  @apply text-sm font-semibold;
+}
+.tiptap ul,
+.tiptap ol {
+  @apply space-y-1 pl-5;
+}
+.tiptap ul {
+  @apply list-disc;
+}
+.tiptap ol {
+  @apply list-decimal;
+}
+.tiptap blockquote {
+  @apply border-l-2 border-primary/40 pl-3 italic text-muted-foreground;
+}
+.tiptap code {
+  @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+}
+.tiptap pre {
+  @apply overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs;
+}
+.tiptap hr {
+  @apply my-3 border-border;
+}
+/* Inline math kept as LaTeX source while editing */
+.tiptap .math-source {
+  @apply rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[0.85em] text-primary;
+}
+.tiptap .math-source::before {
+  content: "\03A3 ";
+}
+
 /* KaTeX inherits the app font sizes */
 .katex {
   font-size: 1.02em;

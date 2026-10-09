@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Copy, Eye, Loader2, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Copy, Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { useI18n } from "@/lib/i18n";
@@ -99,6 +100,14 @@ export default function AdminQuestionBankPage() {
         title={t("admin.questions.title")}
         subtitle={t("admin.questions.subtitle")}
         count={filtered.length}
+        actions={
+          <Button asChild size="sm">
+            <Link href="/admin/bank-soal/baru">
+              <Plus className="size-4" />
+              {t("admin.editor.new")}
+            </Link>
+          </Button>
+        }
       />
 
       <AdminToolbar
@@ -186,6 +195,17 @@ export default function AdminQuestionBankPage() {
                       >
                         <Eye className="size-4" />
                         {t("admin.questions.preview")}
+                      </Button>
+                      <Button
+                        asChild
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={t("admin.editor.openEditor")}
+                        title={t("admin.editor.openEditor")}
+                      >
+                        <Link href={`/admin/bank-soal/${question.id}`}>
+                          <Pencil className="size-4" />
+                        </Link>
                       </Button>
                       <Button
                         size="icon-sm"
